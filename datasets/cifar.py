@@ -9,13 +9,6 @@ import tensorflow_datasets as tfds
 import datasets.registry as registry
 
 
-def _normalize_image(image: tf.Tensor, label: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
-    """Normalizes an image and returns a given supervised training pair."""
-    image = tf.cast(image, tf.float64)
-    # TODO: normalize by mean and stdev rather than 255!
-    return image / 255.0, label
-
-
 def _pad_image(
     image: tf.Tensor, label: tf.Tensor, padding: int = 4
 ) -> Tuple[tf.Tensor, tf.Tensor]:
@@ -74,6 +67,25 @@ def _load_dataset(
         ],
         with_info=True,
     )
+
+    # Precaluclated from CIFAR10
+    mean = tf.constant([125.3, 123.0, 113.9], dtype=tf.float64)
+    mean = tf.reshape(mean, [1, 1, 3])
+    stddev = tf.constant([63.0, 62.1, 66.7], dtype=tf.float64)
+    stddev = tf.reshape(stddev, [1, 1, 3])
+
+    # TODO: move this back out of the load dataset method. Done here so that we can
+    # predeclare mean / stddev without redeclaring for each image. This is placed within
+    # this function's scope so that mean / stddev aren't declared when importing the
+    # `datasets` library, which prevents us from changing the list of visible devices.
+    def _normalize_image(
+        image: tf.Tensor, label: tf.Tensor
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
+        """Normalizes an image and returns a given supervised training pair."""
+        image = tf.cast(image, tf.float64)
+        image = tf.math.subtract(image, mean)
+        image = tf.math.divide(image, stddev)
+        return image, label
 
     train = (
         train.map(_normalize_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
