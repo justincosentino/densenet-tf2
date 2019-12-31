@@ -29,6 +29,7 @@ def _transition_block(x: tf.Tensor, reduction: float, name: Text, dropout: float
         padding="valid",
         use_bias=False,
         kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
+        kernel_initializer=tf.keras.initializers.he_normal(),
         name=_get_name(name, "conv"),
     )(x)
     if dropout > 0:
@@ -68,6 +69,7 @@ def _conv_block(x: tf.Tensor, growth_rate: int, name: Text, dropout: float = 0.0
         padding="valid",
         use_bias=False,
         kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
+        kernel_initializer=tf.keras.initializers.he_normal(),
         name=_get_name(name, "conv_1"),
     )(x_out)
     if dropout > 0:
@@ -88,6 +90,7 @@ def _conv_block(x: tf.Tensor, growth_rate: int, name: Text, dropout: float = 0.0
         padding="valid",
         use_bias=False,
         kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
+        kernel_initializer=tf.keras.initializers.he_normal(),
         name=_get_name(name, "conv_2"),
     )(x_out)
     if dropout > 0:
@@ -136,6 +139,7 @@ def densenet_32x32(
         padding="valid",
         use_bias=False,
         kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
+        kernel_initializer=tf.keras.initializers.he_normal(),
         name="init/conv",
     )(x)
 
@@ -201,6 +205,7 @@ def _densenet_224x224(
         padding="valid",
         use_bias=False,
         kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
+        kernel_initializer=tf.keras.initializers.he_normal(),
         name="init/conv",
     )(x)
     x = tf.keras.layers.BatchNormalization(axis=3, epsilon=1e-5, name="init/bn")(x)
