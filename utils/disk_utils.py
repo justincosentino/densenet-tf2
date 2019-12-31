@@ -18,7 +18,6 @@ def write_flags(
     flags: flags._flagvalues.FlagValues, output_dir: Text, file_name: Text = "flags.txt"
 ):
     """Saves a copy of the absl flags to the specified dir and file."""
-    print(type(flags))
     flag_str = flags.flags_into_string()
     wrapped_log(flag_str)
     with open(os.path.join(output_dir, file_name), "wt") as f:
