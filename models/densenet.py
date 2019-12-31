@@ -28,6 +28,7 @@ def _transition_block(x: tf.Tensor, reduction: float, name: Text, dropout: float
         strides=(1, 1),
         padding="valid",
         use_bias=False,
+        kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
         name=_get_name(name, "conv"),
     )(x)
     if dropout > 0:
@@ -66,6 +67,7 @@ def _conv_block(x: tf.Tensor, growth_rate: int, name: Text, dropout: float = 0.0
         strides=(1, 1),
         padding="valid",
         use_bias=False,
+        kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
         name=_get_name(name, "conv_1"),
     )(x_out)
     if dropout > 0:
@@ -85,6 +87,7 @@ def _conv_block(x: tf.Tensor, growth_rate: int, name: Text, dropout: float = 0.0
         strides=(1, 1),
         padding="valid",
         use_bias=False,
+        kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
         name=_get_name(name, "conv_2"),
     )(x_out)
     if dropout > 0:
@@ -132,6 +135,7 @@ def densenet_32x32(
         strides=(1, 1),
         padding="valid",
         use_bias=False,
+        kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
         name="init/conv",
     )(x)
 
@@ -146,7 +150,11 @@ def densenet_32x32(
     x = _final_transition_block(x, "trans_3")
 
     # output layer
-    outputs = tf.keras.layers.Dense(units=num_classes, name="output")(x)
+    outputs = tf.keras.layers.Dense(
+        units=num_classes,
+        kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
+        name="output",
+    )(x)
 
     model = tf.keras.Model(
         inputs=inputs, outputs=outputs, name="densenet_32x32_{}".format(num_classes)
@@ -192,6 +200,7 @@ def _densenet_224x224(
         strides=(2, 2),
         padding="valid",
         use_bias=False,
+        kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
         name="init/conv",
     )(x)
     x = tf.keras.layers.BatchNormalization(axis=3, epsilon=1e-5, name="init/bn")(x)
@@ -213,7 +222,11 @@ def _densenet_224x224(
     x = _final_transition_block(x, "trans_4")
 
     # output layer
-    outputs = tf.keras.layers.Dense(units=num_classes, name="output")(x)
+    outputs = tf.keras.layers.Dense(
+        units=num_classes,
+        kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
+        name="output",
+    )(x)
 
     model = tf.keras.Model(
         inputs=inputs, outputs=outputs, name="densenet_32x32_{}".format(num_classes)
