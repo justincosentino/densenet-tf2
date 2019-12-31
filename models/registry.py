@@ -1,6 +1,8 @@
 """Basic registry for densenet model builders."""
 
+from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import Text
 
 import tensorflow as tf
@@ -18,11 +20,12 @@ def register(model: Text) -> Callable:
     return add_to_dict
 
 
-def load_model(model: Text) -> tf.keras.Model:
+def load_model(model: Text, params: Dict[Text, Any]) -> tf.keras.Model:
     """Fetches and invokes the model builder associated with the given model name.
 
     Args:
         model: The registered name of the densenet model loader.
+        params: .
 
     Returns:
         A built instance of the model.
@@ -32,4 +35,4 @@ def load_model(model: Text) -> tf.keras.Model:
     """
     if model not in _MODELS:
         raise Exception("Invalid densenet model builder: {}".format(model))
-    return _MODELS[model]()
+    return _MODELS[model](**params)
