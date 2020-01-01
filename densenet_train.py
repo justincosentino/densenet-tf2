@@ -86,12 +86,14 @@ def run_train_loop(base_dir: Text, checkpoint_dir: Text, logging_dir: Text) -> N
 
     lr_sched_cb = tf.keras.callbacks.LearningRateScheduler(scheduler)
 
-    # TODO: add more metrics, add checkpointing, add early stopping
-    # tf.keras.callbacks.EarlyStopping(
-    #     monitor="val_sparse_categorical_accuracy",
-    #     patience=stopping_epochs,
-    #     restore_best_weights=True,
-    # ),
+    # TODO: consider adding early stopping?
+    # Create a callback that saves the model's weights
+    checkpoint_path = os.path.join(
+        checkpoint_dir, "checkpoint-weights-{epoch:02d}-{val_loss:.2f}.ckpt"
+    )
+    checkpoint_cb = tf.keras.callbacks.ModelCheckpoint(
+        filepath=checkpoint_path, save_weights_only=True, verbose=1, save_best_only=True
+    )
 
     # Specify the training configuration (optimizer, loss, metrics)
     model.compile(
@@ -108,11 +110,12 @@ def run_train_loop(base_dir: Text, checkpoint_dir: Text, logging_dir: Text) -> N
         # TODO: make this calculation dataset-dependent
         steps_per_epoch=700,
         epochs=FLAGS.epochs,
-        callbacks=[lr_sched_cb, tensorboard_cb],
+        callbacks=[lr_sched_cb, tensorboard_cb, checkpoint_cb],
         validation_data=val_data,
         verbose=2,
     )
 
+    model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
     results = model.evaluate(test_data)
     print("\ntest loss, test acc:", results)
 
