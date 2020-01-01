@@ -20,7 +20,7 @@ def _pad_image(
 
 
 def _crop_image(
-    image: tf.Tensor, label: tf.Tensor, out_size: Tuple[int] = None
+    image: tf.Tensor, label: tf.Tensor, out_size: Tuple[int, int, int] = None
 ) -> Tuple[tf.Tensor, tf.Tensor]:
     """Randomly crops an image and returns a given supervised training pair."""
     if out_size is None:
@@ -42,6 +42,8 @@ def _load_dataset(
     dataset_name: Text,
     train_size: int,
     val_size: int,
+    mean: Tuple[float, float, float],
+    stddev: Tuple[float, float, float],
     batch_size: int = 64,
     shuffle_buffer_size: int = 1000,
 ) -> Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset, tfds.core.DatasetInfo]:
@@ -68,11 +70,8 @@ def _load_dataset(
         with_info=True,
     )
 
-    # Precaluclated from CIFAR10
-    mean = tf.constant([125.3, 123.0, 113.9], dtype=tf.float64)
-    mean = tf.reshape(mean, [1, 1, 3])
-    stddev = tf.constant([63.0, 62.1, 66.7], dtype=tf.float64)
-    stddev = tf.reshape(stddev, [1, 1, 3])
+    mean = tf.reshape(tf.constant(mean, dtype=tf.float64), [1, 1, 3])
+    stddev = tf.reshape(tf.constant(stddev, dtype=tf.float64), [1, 1, 3])
 
     # TODO: move this back out of the load dataset method. Done here so that we can
     # predeclare mean / stddev without redeclaring for each image. This is placed within
@@ -128,7 +127,12 @@ def load_cifar10(
         The train, val, and test datasets.
     """
     return _load_dataset(
-        "cifar10:3.*.*", train_size=train_size, val_size=val_size, batch_size=batch_size
+        "cifar10:3.*.*",
+        mean=(125.3, 123.0, 113.9),
+        stddev=(63.0, 62.1, 66.7),
+        train_size=train_size,
+        val_size=val_size,
+        batch_size=batch_size,
     )
 
 
@@ -148,6 +152,8 @@ def load_cifar100(
     """
     return _load_dataset(
         "cifar100:3.*.*",
+        mean=(129.3, 124.1, 112.4),
+        stddev=(68.2, 65.4, 70.4),
         train_size=train_size,
         val_size=val_size,
         batch_size=batch_size,
