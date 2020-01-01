@@ -28,7 +28,7 @@ def _transition_block(x: tf.Tensor, reduction: float, name: Text, dropout: float
         strides=(1, 1),
         padding="valid",
         use_bias=False,
-        kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
+        kernel_regularizer=tf.keras.regularizers.l2(l=1e-4),
         kernel_initializer=tf.keras.initializers.he_normal(),
         name=_get_name(name, "conv"),
     )(x)
@@ -68,7 +68,7 @@ def _conv_block(x: tf.Tensor, growth_rate: int, name: Text, dropout: float = 0.0
         strides=(1, 1),
         padding="valid",
         use_bias=False,
-        kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
+        kernel_regularizer=tf.keras.regularizers.l2(l=1e-4),
         kernel_initializer=tf.keras.initializers.he_normal(),
         name=_get_name(name, "conv_1"),
     )(x_out)
@@ -89,7 +89,7 @@ def _conv_block(x: tf.Tensor, growth_rate: int, name: Text, dropout: float = 0.0
         strides=(1, 1),
         padding="valid",
         use_bias=False,
-        kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
+        kernel_regularizer=tf.keras.regularizers.l2(l=1e-4),
         kernel_initializer=tf.keras.initializers.he_normal(),
         name=_get_name(name, "conv_2"),
     )(x_out)
@@ -138,7 +138,7 @@ def densenet_32x32(
         strides=(1, 1),
         padding="valid",
         use_bias=False,
-        kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
+        kernel_regularizer=tf.keras.regularizers.l2(l=1e-4),
         kernel_initializer=tf.keras.initializers.he_normal(),
         name="init/conv",
     )(x)
@@ -156,7 +156,7 @@ def densenet_32x32(
     # output layer
     outputs = tf.keras.layers.Dense(
         units=num_classes,
-        kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
+        kernel_regularizer=tf.keras.regularizers.l2(l=1e-4),
         name="output",
     )(x)
 
@@ -170,7 +170,7 @@ def densenet_32x32(
 
 
 def _densenet_224x224(
-    depth: int = 169,
+    depth: int = 121,
     growth_rate: int = 32,
     reduction: float = 0.5,
     dropout: float = 0.0,
@@ -204,7 +204,7 @@ def _densenet_224x224(
         strides=(2, 2),
         padding="valid",
         use_bias=False,
-        kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
+        kernel_regularizer=tf.keras.regularizers.l2(l=1e-4),
         kernel_initializer=tf.keras.initializers.he_normal(),
         name="init/conv",
     )(x)
@@ -229,7 +229,7 @@ def _densenet_224x224(
     # output layer
     outputs = tf.keras.layers.Dense(
         units=num_classes,
-        kernel_regularizer=tf.keras.regularizers.l2(l=10e-4),
+        kernel_regularizer=tf.keras.regularizers.l2(l=1e-4),
         name="output",
     )(x)
 
