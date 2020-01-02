@@ -1,5 +1,6 @@
 """Utilities for loading the cifar10 and cifar100 datasets."""
 
+from typing import Callable
 from typing import Text
 from typing import Tuple
 
@@ -7,6 +8,29 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 
 import datasets.registry as registry
+
+
+def _normalize_image_wrapper(
+    mean: Tuple[float, float, float], stddev: Tuple[float, float, float]
+) -> Callable[[tf.Tensor, tf.Tensor], tf.Tensor]:
+
+    mean = tf.reshape(tf.constant(mean, dtype=tf.float64), [1, 1, 3])
+    stddev = tf.reshape(tf.constant(stddev, dtype=tf.float64), [1, 1, 3])
+
+    # TODO: move this back out of the load dataset method. Done here so that we can
+    # predeclare mean / stddev without redeclaring for each image. This is placed within
+    # this function's scope so that mean / stddev aren't declared when importing the
+    # `datasets` library, which prevents us from changing the list of visible devices.
+    def _normalize_image(
+        image: tf.Tensor, label: tf.Tensor
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
+        """Normalizes an image and returns a given supervised training pair."""
+        image = tf.cast(image, tf.float64)
+        image = tf.math.subtract(image, mean)
+        image = tf.math.divide(image, stddev)
+        return image, label
+
+    return _normalize_image
 
 
 def _pad_image(
@@ -70,41 +94,34 @@ def _load_dataset(
         with_info=True,
     )
 
-    mean = tf.reshape(tf.constant(mean, dtype=tf.float64), [1, 1, 3])
-    stddev = tf.reshape(tf.constant(stddev, dtype=tf.float64), [1, 1, 3])
-
-    # TODO: move this back out of the load dataset method. Done here so that we can
-    # predeclare mean / stddev without redeclaring for each image. This is placed within
-    # this function's scope so that mean / stddev aren't declared when importing the
-    # `datasets` library, which prevents us from changing the list of visible devices.
-    def _normalize_image(
-        image: tf.Tensor, label: tf.Tensor
-    ) -> Tuple[tf.Tensor, tf.Tensor]:
-        """Normalizes an image and returns a given supervised training pair."""
-        image = tf.cast(image, tf.float64)
-        image = tf.math.subtract(image, mean)
-        image = tf.math.divide(image, stddev)
-        return image, label
-
     train = (
-        train.map(_normalize_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        train.map(
+            _normalize_image_wrapper(mean, stddev),
+            num_parallel_calls=tf.data.experimental.AUTOTUNE,
+        )
         .map(_pad_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         .cache()
         .shuffle(shuffle_buffer_size)
-        .repeat()
         .map(_crop_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         .map(_random_flip, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         .batch(batch_size)
+        .repeat()
     )
 
     val = (
-        val.map(_normalize_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        val.map(
+            _normalize_image_wrapper(mean, stddev),
+            num_parallel_calls=tf.data.experimental.AUTOTUNE,
+        )
         # .shuffle(shuffle_buffer_size)
         .batch(batch_size).cache()
     )
 
     test = (
-        test.map(_normalize_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        test.map(
+            _normalize_image_wrapper(mean, stddev),
+            num_parallel_calls=tf.data.experimental.AUTOTUNE,
+        )
         # .shuffle(shuffle_buffer_size)
         .batch(batch_size).cache()
     )

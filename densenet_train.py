@@ -19,6 +19,7 @@ FLAGS = flags.FLAGS
 flags.DEFINE_list("devices", "0,1,2,3", "a comma-separated list of gpu device ids.")
 flags.DEFINE_integer("epochs", 300, "the number of training epochs.", lower_bound=1)
 flags.DEFINE_integer("batch_size", 64, "the training batch size.", lower_bound=1)
+flags.DEFINE_integer("train_size", 45000, "the training set size.", lower_bound=1)
 flags.DEFINE_integer("val_size", 5000, "the validation set size.", lower_bound=0)
 flags.DEFINE_enum(
     "dataset", "cifar10", ["cifar10", "cifar100", "svhn", "imagenet"], "the dataset."
@@ -32,10 +33,7 @@ flags.DEFINE_enum(
 flags.DEFINE_float(
     "lr",
     0.1,
-    (
-        "the intial learning rate; divided by 10 at 50% and 75% of the total number of "
-        "training epochs."
-    ),
+    "the intial learning rate; divided by 10 twice (epoch # depends on dataset)",
     lower_bound=0,
 )
 flags.DEFINE_string(
@@ -54,7 +52,7 @@ def run_train_loop(base_dir: Text, checkpoint_dir: Text, logging_dir: Text) -> N
 
     # Init data, model, and optimizer.
     train_data, val_data, test_data, info = datasets_registry.load_dataset(
-        FLAGS.dataset
+        FLAGS.dataset, FLAGS.batch_size, FLAGS.train_size, FLAGS.val_size
     )
 
     model = models_registry.load_model(FLAGS.model, {})
@@ -63,8 +61,8 @@ def run_train_loop(base_dir: Text, checkpoint_dir: Text, logging_dir: Text) -> N
         learning_rate=FLAGS.lr, momentum=0.9, nesterov=True
     )
 
-    def scheduler(epoch):
-        if "cifar" in FLAGS.dataset:
+    def scheduler(epoch: int) -> float:
+        if "cifar10" == FLAGS.dataset or "cifar100" == FLAGS.dataset:
             if epoch < FLAGS.epochs * 0.5:
                 return FLAGS.lr
             if epoch >= FLAGS.epochs * 0.5 and epoch < FLAGS.epochs * 0.75:
@@ -80,19 +78,20 @@ def run_train_loop(base_dir: Text, checkpoint_dir: Text, logging_dir: Text) -> N
 
         raise ValueError("bad dataset")
 
-    tensorboard_cb = tf.keras.callbacks.TensorBoard(
+    lr_sched_callback = tf.keras.callbacks.LearningRateScheduler(scheduler)
+
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(
         log_dir=logging_dir, profile_batch=0
     )
 
-    lr_sched_cb = tf.keras.callbacks.LearningRateScheduler(scheduler)
-
     # TODO: consider adding early stopping?
-    # Create a callback that saves the model's weights
-    checkpoint_path = os.path.join(
-        checkpoint_dir, "checkpoint-weights-{epoch:02d}-{val_loss:.2f}.ckpt"
-    )
-    checkpoint_cb = tf.keras.callbacks.ModelCheckpoint(
-        filepath=checkpoint_path, save_weights_only=True, verbose=1, save_best_only=True
+    checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+        filepath=os.path.join(
+            checkpoint_dir, "checkpoint-weights-{epoch:02d}-{val_loss:.2f}.ckpt"
+        ),
+        save_weights_only=True,
+        verbose=1,
+        save_best_only=True,
     )
 
     # Specify the training configuration (optimizer, loss, metrics)
@@ -107,17 +106,17 @@ def run_train_loop(base_dir: Text, checkpoint_dir: Text, logging_dir: Text) -> N
 
     _ = model.fit(
         x=train_data,
-        # TODO: make this calculation dataset-dependent
-        steps_per_epoch=700,
+        # TODO: consider passing in # epochs to the dataloader and removing this:
+        steps_per_epoch=FLAGS.train_size // FLAGS.batch_size,
         epochs=FLAGS.epochs,
-        callbacks=[lr_sched_cb, tensorboard_cb, checkpoint_cb],
+        callbacks=[lr_sched_callback, tensorboard_callback, checkpoint_callback],
         validation_data=val_data,
         verbose=2,
     )
 
     model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
     results = model.evaluate(test_data)
-    print("\ntest loss, test acc:", results)
+    print("\ntest loss {}, test acc: {}".format(results[0], results[1]))
 
 
 def main(argv: Any):

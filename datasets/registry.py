@@ -21,7 +21,7 @@ def register(dataset: Text) -> Callable:
 
 
 def load_dataset(
-    dataset: Text
+    dataset: Text, batch_size: int, train_size: int, val_size: int
 ) -> Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset, tfds.core.DatasetInfo]:
     """Fetches and invokes the dataset loader associated with the given dataset name.
 
@@ -36,4 +36,6 @@ def load_dataset(
     """
     if dataset not in _DATASETS:
         raise Exception("Invalid dataset loader: {}".format(dataset))
-    return _DATASETS[dataset]()
+    return _DATASETS[dataset](
+        batch_size=batch_size, train_size=train_size, val_size=val_size
+    )
