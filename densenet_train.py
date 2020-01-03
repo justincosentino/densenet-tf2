@@ -50,16 +50,28 @@ def run_train_loop(base_dir: Text, checkpoint_dir: Text, logging_dir: Text) -> N
     Initializes metrics, summaries, checkpoints, etc.
     """
 
+    # Set active gpus and allow for memory growth
+    strategy = gpu_utils.set_active_devices(FLAGS.devices)
+
     # Init data, model, and optimizer.
     train_data, val_data, test_data, info = datasets_registry.load_dataset(
         FLAGS.dataset, FLAGS.batch_size, FLAGS.train_size, FLAGS.val_size
     )
 
-    model = models_registry.load_model(FLAGS.model, {})
+    with strategy.scope():
 
-    optimizer = tf.keras.optimizers.SGD(
-        learning_rate=FLAGS.lr, momentum=0.9, nesterov=True
-    )
+        model = models_registry.load_model(FLAGS.model, {})
+
+        optimizer = tf.keras.optimizers.SGD(
+            learning_rate=FLAGS.lr, momentum=0.9, nesterov=True
+        )
+
+        # Specify the training configuration (optimizer, loss, metrics)
+        model.compile(
+            optimizer=optimizer,
+            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+            metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
+        )
 
     def scheduler(epoch: int) -> float:
         if "cifar10" == FLAGS.dataset or "cifar100" == FLAGS.dataset:
@@ -92,13 +104,6 @@ def run_train_loop(base_dir: Text, checkpoint_dir: Text, logging_dir: Text) -> N
         save_weights_only=True,
         verbose=1,
         save_best_only=True,
-    )
-
-    # Specify the training configuration (optimizer, loss, metrics)
-    model.compile(
-        optimizer=optimizer,
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
     )
 
     # Write model summary to output dir.
@@ -134,9 +139,6 @@ def main(argv: Any):
 
     # Write flags to output dir.
     disk_utils.write_flags(FLAGS, base_dir, "flags_train.txt")
-
-    # Set active gpus and allow for memory growth
-    gpu_utils.set_active_devices(FLAGS.devices)
 
     if FLAGS.debug:
         logging.set_verbosity(logging.DEBUG)
