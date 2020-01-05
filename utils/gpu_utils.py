@@ -19,5 +19,7 @@ def set_active_devices(devices: List[str]) -> None:
     ]
 
     tf.config.experimental.set_visible_devices(physical_devices, "GPU")
+    for physical_device in physical_devices:
+        tf.config.experimental.set_memory_growth(physical_device, True)
 
     return tf.distribute.MirroredStrategy()
