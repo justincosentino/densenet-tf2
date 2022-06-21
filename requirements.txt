@@ -1,7 +1,7 @@
 # python==3.7.3
 absl_py==0.8.1
 matplotlib==3.1.1
-numpy==1.17.3
+numpy==1.22.0
 seaborn==0.9.0
 tensorboard==2.1.0
 tensorflow-datasets==1.2.0
